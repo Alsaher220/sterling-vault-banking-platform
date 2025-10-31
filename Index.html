@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sterling Vault - Modern Banking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+```
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-width: 900px;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+
+    .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        font-weight: 300;
+        letter-spacing: 2px;
+    }
+
+    .header p {
+        opacity: 0.9;
+        font-size: 1.1em;
+    }
+
+    .content {
+        padding: 40px;
+    }
+
+    .screen {
+        display: none;
+    }
+
+    .screen.active {
+        display: block;
+        animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: border-color 0.3s;
+    }
+
+    input:focus, select:focus {
+        outline: none;
+        border-color: #2a5298;
+    }
+
+    button {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        padding: 14px 30px;
+        border-radius: 8px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
+        margin-top: 10px;
+        font-weight: 600;
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(42, 82, 152, 0.4);
+    }
+
+    button.secondary {
+        background: #6c757d;
+        margin-top: 10px;
+    }
+
+    .dashboard {
+        display: grid;
+        gap: 20px;
+    }
+
+    .balance-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .balance-card h2 {
+        font-size: 1.2em;
+        font-weight: 300;
+        margin-bottom: 10px;
+        opacity: 0.9;
+    }
+
+    .balance-card .amount {
+        font-size: 3em;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+
+    .account-details {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+
+    .account-details p {
+        margin: 8px 0;
+        color: #555;
+    }
+
+    .account-details strong {
+        color: #333;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .transaction-list {
+        margin-top: 30px;
+    }
+
+    .transaction-list h3 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+    }
+
+    .transaction {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-left: 4px solid #2a5298;
+    }
+
+    .transaction.credit {
+        border-left-color: #28a745;
+    }
+
+    .transaction.debit {
+        border-left-color: #dc3545;
+    }
+
+    .transaction-info {
+        flex: 1;
+    }
+
+    .transaction-type {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .transaction-date {
+        font-size: 0.9em;
+        color: #666;
+    }
+
+    .transaction-amount {
+        font-size: 1.3em;
+        font-weight: 700;
+    }
+
+    .transaction-amount.credit {
+        color: #28a745;
+    }
+
+    .transaction-amount.debit {
+        color: #dc3545;
+    }
+
+    .welcome-screen {
+        text-align: center;
+    }
+
+    .welcome-screen h2 {
+        color: #333;
+        margin-bottom: 30px;
+        font-size: 2em;
+    }
+
+    .welcome-buttons {
+        display: grid;
+        gap: 15px;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #f5c6cb;
+    }
+
+    .success {
+        background: #d4edda;
+        color: #155724;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #c3e6cb;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .user-info {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💎 STERLING VAULT</h1>
+            <p>Secure Digital Banking</p>
+        </div>
+
+```
+    <div class="content">
+        <!-- Welcome Screen -->
+        <div id="welcomeScreen" class="screen active">
+            <div class="welcome-screen">
+                <h2>Welcome to Sterling Vault</h2>
+                <p style="color: #666; margin-bottom: 40px; font-size: 1.1em;">Experience the future of secure digital banking</p>
+                <div class="welcome-buttons">
+                    <button onclick="showScreen('loginScreen')">Sign In to Your Account</button>
+                    <button class="secondary" onclick="showScreen('registerScreen')">Create New Account</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Screen -->
+        <div id="registerScreen" class="screen">
+            <h2 style="color: #333; margin-bottom: 30px;">Open Your Account</h2>
+            <div id="registerError"></div>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="regName" placeholder="John Smith">
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="regEmail" placeholder="john.smith@example.com">
+            </div>
+            <div class="form-group">
+                <label>Account Type</label>
+                <select id="regAccountType">
+                    <option value="current">Current Account</option>
+                    <option value="savings">Savings Account</option>
+                    <option value="business">Business Account</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Create Password</label>
+                <input type="password" id="regPassword" placeholder="Minimum 6 characters">
+            </div>
+            <div class="form-group">
+                <label>Initial Deposit (£)</label>
+                <input type="number" id="regDeposit" placeholder="100" min="0" step="0.01">
+            </div>
+            <button onclick="register()">Open Account</button>
+            <button class="secondary" onclick="showScreen('welcomeScreen')">Back to Welcome</button>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen" class="screen">
+            <h2 style="color: #333; margin-bottom: 30px;">Sign In</h2>
+            <div id="loginError"></div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="loginEmail" placeholder="your.email@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password">
+            </div>
+            <button onclick="login()">Sign In</button>
+            <button class="secondary" onclick="showScreen('welcomeScreen')">Back to Welcome</button>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboardScreen" class="screen">
+            <div class="user-info">
+                <strong>Welcome back, <span id="userName"></span></strong>
+                <p style="margin-top: 5px; color: #666;">Account: <span id="userAccountNumber"></span></p>
+            </div>
+
+            <div class="dashboard">
+                <div class="balance-card">
+                    <h2>Available Balance</h2>
+                    <div class="amount" id="balance">£0.00</div>
+                    <p style="opacity: 0.9;"><span id="accountType"></span></p>
+                </div>
+
+                <div class="actions">
+                    <button onclick="showModal('depositModal')">💰 Deposit</button>
+                    <button onclick="showModal('withdrawModal')">💸 Withdraw</button>
+                </div>
+
+                <div class="transaction-list">
+                    <h3>Transaction History</h3>
+                    <div id="transactionList"></div>
+                </div>
+            </div>
+
+            <button class="secondary" onclick="logout()" style="margin-top: 30px;">Sign Out</button>
+        </div>
+    </div>
+</div>
+
+<!-- Deposit Modal -->
+<div id="depositModal" class="modal">
+    <div class="modal-content">
+        <h2 style="color: #333; margin-bottom: 20px;">Make Deposit</h2>
+        <div id="depositError"></div>
+        <div class="form-group">
+            <label>Amount (£)</label>
+            <input type="number" id="depositAmount" placeholder="0.00" min="0.01" step="0.01">
+        </div>
+        <button onclick="deposit()">Confirm Deposit</button>
+        <button class="secondary" onclick="closeModal('depositModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- Withdraw Modal -->
+<div id="withdrawModal" class="modal">
+    <div class="modal-content">
+        <h2 style="color: #333; margin-bottom: 20px;">Make Withdrawal</h2>
+        <div id="withdrawError"></div>
+        <div class="form-group">
+            <label>Amount (£)</label>
+            <input type="number" id="withdrawAmount" placeholder="0.00" min="0.01" step="0.01">
+        </div>
+        <button onclick="withdraw()">Confirm Withdrawal</button>
+        <button class="secondary" onclick="closeModal('withdrawModal')">Cancel</button>
+    </div>
+</div>
+
+<script>
+    // In-memory storage for demo
+    let accounts = {};
+    let currentUser = null;
+
+    function generateAccountNumber() {
+        const sortCode = '20-00-00';
+        const accountNum = Math.floor(10000000 + Math.random() * 90000000);
+        return `${sortCode}-${accountNum}`;
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function showModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+        document.getElementById(modalId.replace('Modal', 'Error')).innerHTML = '';
+    }
+
+    function showError(elementId, message) {
+        document.getElementById(elementId).innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    function showSuccess(elementId, message) {
+        document.getElementById(elementId).innerHTML = `<div class="success">${message}</div>`;
+    }
+
+    function register() {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim().toLowerCase();
+        const password = document.getElementById('regPassword').value;
+        const accountType = document.getElementById('regAccountType').value;
+        const deposit = parseFloat(document.getElementById('regDeposit').value) || 0;
+
+        if (!name || !email || !password) {
+            showError('registerError', 'Please fill in all required fields');
+            return;
+        }
+
+        if (password.length < 6) {
+            showError('registerError', 'Password must be at least 6 characters');
+            return;
+        }
+
+        if (accounts[email]) {
+            showError('registerError', 'An account with this email already exists');
+            return;
+        }
+
+        const accountNumber = generateAccountNumber();
+        accounts[email] = {
+            name,
+            email,
+            password,
+            accountType,
+            accountNumber,
+            balance: deposit,
+            transactions: deposit > 0 ? [{
+                type: 'Initial Deposit',
+                amount: deposit,
+                date: new Date().toISOString(),
+                isCredit: true
+            }] : []
+        };
+
+        showSuccess('registerError', 'Account created successfully! Please sign in.');
+        setTimeout(() => {
+            showScreen('loginScreen');
+            document.getElementById('registerError').innerHTML = '';
+        }, 2000);
+    }
+
+    function login() {
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+        const password = document.getElementById('loginPassword').value;
+
+        if (!email || !password) {
+            showError('loginError', 'Please enter your email and password');
+            return;
+        }
+
+        const account = accounts[email];
+        if (!account || account.password !== password) {
+            showError('loginError', 'Invalid email or password');
+            return;
+        }
+
+        currentUser = email;
+        loadDashboard();
+        showScreen('dashboardScreen');
+    }
+
+    function loadDashboard() {
+        const account = accounts[currentUser];
+        document.getElementById('userName').textContent = account.name;
+        document.getElementById('userAccountNumber').textContent = account.accountNumber;
+        document.getElementById('balance').textContent = `£${account.balance.toFixed(2)}`;
+        document.getElementById('accountType').textContent = account.accountType.charAt(0).toUpperCase() + account.accountType.slice(1) + ' Account';
+        
+        loadTransactions();
+    }
+
+    function loadTransactions() {
+        const account = accounts[currentUser];
+        const list = document.getElementById('transactionList');
+        
+        if (account.transactions.length === 0) {
+            list.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No transactions yet</p>';
+            return;
+        }
+
+        list.innerHTML = account.transactions.map(t => {
+            const date = new Date(t.date);
+            const formattedDate = date.toLocaleDateString('en-GB', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            return `
+                <div class="transaction ${t.isCredit ? 'credit' : 'debit'}">
+                    <div class="transaction-info">
+                        <div class="transaction-type">${t.type}</div>
+                        <div class="transaction-date">${formattedDate}</div>
+                    </div>
+                    <div class="transaction-amount ${t.isCredit ? 'credit' : 'debit'}">
+                        ${t.isCredit ? '+' : '-'}£${t.amount.toFixed(2)}
+                    </div>
+                </div>
+            `;
+        }).reverse().join('');
+    }
+
+    function deposit() {
+        const amount = parseFloat(document.getElementById('depositAmount').value);
+        
+        if (!amount || amount <= 0) {
+            showError('depositError', 'Please enter a valid amount');
+            return;
+        }
+
+        const account = accounts[currentUser];
+        account.balance += amount;
+        account.transactions.push({
+            type: 'Cash Deposit',
+            amount: amount,
+            date: new Date().toISOString(),
+            isCredit: true
+        });
+
+        loadDashboard();
+        closeModal('depositModal');
+        document.getElementById('depositAmount').value = '';
+    }
+
+    function withdraw() {
+        const amount = parseFloat(document.getElementById('withdrawAmount').value);
+        const account = accounts[currentUser];
+        
+        if (!amount || amount <= 0) {
+            showError('withdrawError', 'Please enter a valid amount');
+            return;
+        }
+
+        if (amount > account.balance) {
+            showError('withdrawError', 'Insufficient funds');
+            return;
+        }
+
+        account.balance -= amount;
+        account.transactions.push({
+            type: 'Cash Withdrawal',
+            amount: amount,
+            date: new Date().toISOString(),
+            isCredit: false
+        });
+
+        loadDashboard();
+        closeModal('withdrawModal');
+        document.getElementById('withdrawAmount').value = '';
+    }
+
+    function logout() {
+        currentUser = null;
+        showScreen('welcomeScreen');
+    }
+
+    // Demo account for testing
+    accounts['demo@sterlingvault.co.uk'] = {
+        name: 'Demo User',
+        email: 'demo@sterlingvault.co.uk',
+        password: 'demo123',
+        accountType: 'current',
+        accountNumber: '20-00-00-12345678',
+        balance: 1500.00,
+        transactions: [
+            { type: 'Initial Deposit', amount: 1000, date: '2025-10-01T10:00:00Z', isCredit: true },
+            { type: 'Salary Credit', amount: 2500, date: '2025-10-15T09:30:00Z', isCredit: true },
+            { type: 'Rent Payment', amount: 850, date: '2025-10-16T14:20:00Z', isCredit: false },
+            { type: 'Grocery Shopping', amount: 125.50, date: '2025-10-20T16:45:00Z', isCredit: false },
+            { type: 'Cash Deposit', amount: 500, date: '2025-10-25T11:10:00Z', isCredit: true },
+            { type: 'Utility Bill', amount: 89.99, date: '2025-10-28T08:15:00Z', isCredit: false }
+        ]
+    };
+</script>
+</body>
+</html>
