@@ -1054,7 +1054,6 @@
     </div>
 
     <script>
-javascript
         let accounts = {};
         let currentUser = null;
         let isAdmin = false;
@@ -1081,7 +1080,12 @@ javascript
             document.querySelectorAll('.currency-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            // try to mark the clicked button active (works when called from onclick with event in some browsers)
+            try {
+                if (event && event.target) event.target.classList.add('active');
+            } catch (e) {
+                // ignore if event is not available
+            }
             
             if (currentUser && !isAdmin) {
                 loadDashboard();
@@ -1122,7 +1126,7 @@ javascript
 
         function switchTab(tab) {
             document.querySelectorAll('#dashboardScreen .nav-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            try { if (event && event.target) event.target.classList.add('active'); } catch(e) {}
             
             document.querySelectorAll('#dashboardScreen .tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tab + 'Tab').classList.add('active');
@@ -1133,7 +1137,7 @@ javascript
 
         function switchAdminTab(tab) {
             document.querySelectorAll('#adminDashboardScreen .nav-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            try { if (event && event.target) event.target.classList.add('active'); } catch(e) {}
             
             document.querySelectorAll('#adminDashboardScreen .tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Tab').classList.add('active');
@@ -1190,39 +1194,86 @@ javascript
             }, 2000);
         }
 
+        // ---------- FIXED login() ----------
         function login() {
             const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
 
+            // Clear any old messages
+            if (document.getElementById('loginError')) {
+                document.getElementById('loginError').innerHTML = '';
+            }
+
+            // Validation
             if (!email || !password) {
                 showError('loginError', 'Please enter your email and password');
                 return;
             }
 
             const account = accounts[email];
-            if (!account || account.password !== password) {
-                showError('loginError', 'Invalid email or password');
+            if (!account) {
+                showError('loginError', 'Account not found. Please register first.');
                 return;
             }
 
+            // Check password
+            if (account.password !== password) {
+                showError('loginError', 'Incorrect password. Try again.');
+                return;
+            }
+
+            // Successful login
             currentUser = email;
             isAdmin = false;
-            loadDashboard();
-            showScreen('dashboardScreen');
+            showSuccess('loginError', 'Login successful! Redirecting...');
+            setTimeout(() => {
+                loadDashboard();
+                showScreen('dashboardScreen');
+                // clear fields
+                const le = document.getElementById('loginEmail');
+                const lp = document.getElementById('loginPassword');
+                if (le) le.value = '';
+                if (lp) lp.value = '';
+                if (document.getElementById('loginError')) document.getElementById('loginError').innerHTML = '';
+            }, 800);
         }
+        // ---------- END fixed login ----------
 
+        // ---------- FIXED adminLogin() ----------
         function adminLogin() {
             const email = document.getElementById('adminEmail').value.trim().toLowerCase();
             const password = document.getElementById('adminPassword').value;
 
+            // Clear previous admin error
+            if (document.getElementById('adminLoginError')) {
+                document.getElementById('adminLoginError').innerHTML = '';
+            }
+
+            if (!email || !password) {
+                showError('adminLoginError', 'Please enter admin email and password');
+                return;
+            }
+
+            // Simple demo admin check (unchanged credential values)
             if (email === 'admin@sterlingvault.co.uk' && password === 'admin123') {
                 isAdmin = true;
-                loadAdminDashboard();
-                showScreen('adminDashboardScreen');
+                currentUser = null;
+                showSuccess('adminLoginError', 'Admin login successful. Redirecting...');
+                setTimeout(() => {
+                    loadAdminDashboard();
+                    showScreen('adminDashboardScreen');
+                    // clear admin inputs
+                    const ae = document.getElementById('adminEmail');
+                    const ap = document.getElementById('adminPassword');
+                    if (ae) ae.value = '';
+                    if (ap) ap.value = '';
+                    if (document.getElementById('adminLoginError')) document.getElementById('adminLoginError').innerHTML = '';
+                }, 800);
             } else {
                 showError('adminLoginError', 'Invalid admin credentials');
             }
         }
+        // ---------- END fixed adminLogin ----------
 
         function loadDashboard() {
             const account = accounts[currentUser];
