@@ -4,18 +4,37 @@ let currentUserData = null;
 let currentCurrency = 'GBP';
 let currencySymbol = '£';
 
-// Wait for Firebase to load
-setTimeout(() => {
-    console.log('🚀 Initializing Customer Portal...');
-    
-    if (!window.auth || !window.db) {
-        console.error('❌ Firebase not loaded properly');
-        setTimeout(initAuth, 1000);
-        return;
+// Check Firebase Ready Status
+function checkFirebaseReady() {
+    if (!window.auth || !window.db || !window.fb) {
+        console.warn('⚠️ Firebase not ready yet');
+        return false;
     }
+    console.log('✅ Firebase is ready!');
+    return true;
+}
 
-    initAuth();
-}, 1500);
+// Wait for Firebase to load with retry mechanism
+let retryCount = 0;
+const maxRetries = 15;
+
+function waitForFirebase() {
+    if (checkFirebaseReady()) {
+        console.log('🚀 Initializing Customer Portal...');
+        window.firebaseReady = true;
+        initAuth();
+    } else if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`⏳ Waiting for Firebase... Attempt ${retryCount}/${maxRetries}`);
+        setTimeout(waitForFirebase, 500);
+    } else {
+        console.error('❌ Firebase failed to load');
+        alert('System failed to load. Please refresh the page.');
+    }
+}
+
+// Start waiting for Firebase
+setTimeout(waitForFirebase, 1000);
 
 function initAuth() {
     try {
@@ -113,8 +132,15 @@ function switchTab(tab) {
     if (tab === 'profile') loadProfile();
 }
 
-// Registration - FIXED VERSION
+// Registration - COMPLETE FIXED VERSION
 async function register() {
+    // CRITICAL: Check if Firebase is ready first
+    if (!checkFirebaseReady()) {
+        showError('registerError', '⚠️ System is still loading. Please wait 5 seconds and try again.');
+        console.error('Firebase not ready for registration');
+        return;
+    }
+
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim().toLowerCase();
     const phone = document.getElementById('regPhone').value.trim();
@@ -125,8 +151,14 @@ async function register() {
     // Clear previous errors
     document.getElementById('registerError').innerHTML = '';
 
+    // Validation
     if (!name || !email || !password || !phone) {
         showError('registerError', '⚠️ Please fill in all fields');
+        return;
+    }
+
+    if (name.length < 2) {
+        showError('registerError', '⚠️ Please enter a valid name');
         return;
     }
 
@@ -149,12 +181,13 @@ async function register() {
     try {
         console.log('📝 Starting registration for:', email);
 
-        // Check if Firebase is ready
-        if (!window.auth || !window.fb) {
-            throw new Error('Firebase not initialized');
+        // Double-check Firebase is available
+        if (!window.auth || !window.fb || !window.db) {
+            throw new Error('Firebase services not available');
         }
 
         // Create Firebase Auth user
+        console.log('Creating Firebase Auth user...');
         const userCredential = await window.fb.createUserWithEmailAndPassword(
             window.auth, 
             email, 
@@ -167,6 +200,7 @@ async function register() {
         const accountNumber = generateAccountNumber();
 
         // Create user document in Firestore
+        console.log('Creating Firestore document...');
         const userDocRef = window.fb.doc(window.db, 'users', user.uid);
         await window.fb.setDoc(userDocRef, {
             name: name,
@@ -180,7 +214,7 @@ async function register() {
             uid: user.uid
         });
 
-        console.log('✅ User document created in Firestore');
+        console.log('✅ User document created successfully');
 
         showSuccess('registerError', '✅ Account created successfully! Redirecting to login...');
         
@@ -193,27 +227,29 @@ async function register() {
             document.getElementById('registerError').innerHTML = '';
             btn.disabled = false;
             btn.textContent = 'Submit Application';
-        }, 2000);
+        }, 2500);
 
     } catch (error) {
         console.error('❌ Registration error:', error);
         console.error('Error code:', error.code);
         console.error('Error message:', error.message);
         
-        let errorMsg = '❌ Registration failed. ';
+        let errorMsg = '❌ ';
         
         if (error.code === 'auth/email-already-in-use') {
-            errorMsg += 'This email is already registered. Please login instead.';
+            errorMsg += 'This email is already registered. Please use the Sign In button instead.';
         } else if (error.code === 'auth/invalid-email') {
-            errorMsg += 'Invalid email address format.';
+            errorMsg += 'Invalid email address format. Please check and try again.';
         } else if (error.code === 'auth/weak-password') {
-            errorMsg += 'Password is too weak. Use at least 6 characters.';
+            errorMsg += 'Password is too weak. Please use at least 6 characters.';
         } else if (error.code === 'auth/network-request-failed') {
-            errorMsg += 'Network error. Check your internet connection.';
-        } else if (error.message.includes('Firebase not initialized')) {
-            errorMsg += 'System not ready. Please refresh the page and try again.';
+            errorMsg += 'Network error. Please check your internet connection and try again.';
+        } else if (error.code === 'auth/operation-not-allowed') {
+            errorMsg += 'Registration is temporarily disabled. Please contact support.';
+        } else if (error.message && error.message.includes('Firebase')) {
+            errorMsg += 'System error. Please refresh the page and try again.';
         } else {
-            errorMsg += error.message || 'Please try again.';
+            errorMsg += 'Registration failed. Please try again or contact support.';
         }
         
         showError('registerError', errorMsg);
@@ -222,8 +258,14 @@ async function register() {
     }
 }
 
-// Login - FIXED VERSION
+// Login - COMPLETE FIXED VERSION
 async function login() {
+    // Check Firebase ready
+    if (!checkFirebaseReady()) {
+        showError('loginError', '⚠️ System is still loading. Please wait 5 seconds and try again.');
+        return;
+    }
+
     const email = document.getElementById('loginEmail').value.trim().toLowerCase();
     const password = document.getElementById('loginPassword').value;
     const btn = document.getElementById('loginBtn');
@@ -235,6 +277,13 @@ async function login() {
         return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showError('loginError', '⚠️ Please enter a valid email address');
+        return;
+    }
+
     btn.disabled = true;
     btn.textContent = 'Signing In...';
     showLoading('loginError', '⏳ Signing in...');
@@ -243,13 +292,13 @@ async function login() {
         console.log('🔐 Attempting login for:', email);
 
         if (!window.auth || !window.fb) {
-            throw new Error('Firebase not initialized');
+            throw new Error('Firebase not available');
         }
 
         await window.fb.signInWithEmailAndPassword(window.auth, email, password);
         
         console.log('✅ Login successful');
-        showSuccess('loginError', '✅ Login successful!');
+        showSuccess('loginError', '✅ Login successful! Loading your account...');
         
         setTimeout(() => {
             document.getElementById('loginEmail').value = '';
@@ -257,24 +306,26 @@ async function login() {
             document.getElementById('loginError').innerHTML = '';
             btn.disabled = false;
             btn.textContent = 'Sign In';
-        }, 1000);
+        }, 1500);
 
     } catch (error) {
         console.error('❌ Login error:', error);
         
         let errorMsg = '❌ ';
         if (error.code === 'auth/user-not-found') {
-            errorMsg += 'No account found with this email. Please register first.';
+            errorMsg += 'No account found with this email. Please create an account first.';
         } else if (error.code === 'auth/wrong-password') {
             errorMsg += 'Incorrect password. Please try again.';
         } else if (error.code === 'auth/invalid-email') {
             errorMsg += 'Invalid email format.';
+        } else if (error.code === 'auth/user-disabled') {
+            errorMsg += 'This account has been disabled. Please contact support.';
         } else if (error.code === 'auth/network-request-failed') {
             errorMsg += 'Network error. Check your internet connection.';
-        } else if (error.message.includes('Firebase not initialized')) {
-            errorMsg += 'System not ready. Please refresh the page and try again.';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMsg += 'Too many failed attempts. Please try again later.';
         } else {
-            errorMsg += 'Login failed. Please check your credentials.';
+            errorMsg += 'Login failed. Please check your credentials and try again.';
         }
         
         showError('loginError', errorMsg);
@@ -442,7 +493,20 @@ async function uploadProfilePic() {
     const file = document.getElementById('profilePicInput').files[0];
     if (!file) return;
 
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('❌ File too large. Please choose an image under 5MB.');
+        return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+        alert('❌ Please select an image file.');
+        return;
+    }
+
     try {
+        console.log('Uploading profile picture...');
         const storageRef = window.fb.ref(window.storage, `profile-pics/${currentUser}`);
         await window.fb.uploadBytes(storageRef, file);
         const downloadURL = await window.fb.getDownloadURL(storageRef);
@@ -455,10 +519,10 @@ async function uploadProfilePic() {
         currentUserData.profilePicUrl = downloadURL;
         loadProfile();
         
-        alert('✅ Profile picture updated!');
+        alert('✅ Profile picture updated successfully!');
     } catch (error) {
         console.error('Error uploading:', error);
-        alert('❌ Failed to upload. Try again.');
+        alert('❌ Failed to upload profile picture. Please try again.');
     }
 }
 
@@ -468,12 +532,17 @@ async function requestDeposit() {
     const notes = document.getElementById('depositRequestNotes').value.trim();
     
     if (!amount || amount <= 0) {
-        showError('depositRequestError', '⚠️ Enter valid amount');
+        showError('depositRequestError', '⚠️ Please enter a valid amount');
+        return;
+    }
+
+    if (amount > 10000000) {
+        showError('depositRequestError', '⚠️ Maximum request amount is $10,000,000');
         return;
     }
 
     try {
-        showLoading('depositRequestError', '⏳ Submitting...');
+        showLoading('depositRequestError', '⏳ Submitting request...');
 
         const transRef = window.fb.collection(window.db, 'users', currentUser, 'transactions');
         await window.fb.addDoc(transRef, {
@@ -497,7 +566,7 @@ async function requestDeposit() {
             status: 'pending'
         });
 
-        showSuccess('depositRequestError', '✅ Request submitted!');
+        showSuccess('depositRequestError', '✅ Deposit request submitted successfully!');
         
         setTimeout(() => {
             closeModal('depositRequestModal');
@@ -508,7 +577,7 @@ async function requestDeposit() {
 
     } catch (error) {
         console.error('Deposit request error:', error);
-        showError('depositRequestError', '❌ Failed. Try again.');
+        showError('depositRequestError', '❌ Failed to submit request. Please try again.');
     }
 }
 
@@ -518,22 +587,22 @@ async function requestWithdraw() {
     const notes = document.getElementById('withdrawRequestNotes').value.trim();
     
     if (!amount || amount <= 0) {
-        showError('withdrawRequestError', '⚠️ Enter valid amount');
+        showError('withdrawRequestError', '⚠️ Please enter a valid amount');
         return;
     }
 
     if (amount > (currentUserData.balance || 0)) {
-        showError('withdrawRequestError', '⚠️ Insufficient funds');
+        showError('withdrawRequestError', '⚠️ Insufficient funds in your account');
         return;
     }
 
     if (!notes) {
-        showError('withdrawRequestError', '⚠️ Provide reason');
+        showError('withdrawRequestError', '⚠️ Please provide a reason for withdrawal');
         return;
     }
 
     try {
-        showLoading('withdrawRequestError', '⏳ Submitting...');
+        showLoading('withdrawRequestError', '⏳ Submitting request...');
 
         const transRef = window.fb.collection(window.db, 'users', currentUser, 'transactions');
         await window.fb.addDoc(transRef, {
@@ -557,7 +626,7 @@ async function requestWithdraw() {
             status: 'pending'
         });
 
-        showSuccess('withdrawRequestError', '✅ Request submitted!');
+        showSuccess('withdrawRequestError', '✅ Withdrawal request submitted successfully!');
         
         setTimeout(() => {
             closeModal('withdrawRequestModal');
@@ -568,7 +637,7 @@ async function requestWithdraw() {
 
     } catch (error) {
         console.error('Withdrawal error:', error);
-        showError('withdrawRequestError', '❌ Failed. Try again.');
+        showError('withdrawRequestError', '❌ Failed to submit request. Please try again.');
     }
 }
 
@@ -579,11 +648,12 @@ async function logout() {
         currentUser = null;
         currentUserData = null;
         showScreen('welcomeScreen');
-        console.log('✅ Logged out');
+        console.log('✅ Logged out successfully');
     } catch (error) {
         console.error('Logout error:', error);
-        alert('❌ Logout failed');
+        alert('❌ Logout failed. Please refresh the page.');
     }
 }
 
-console.log('💎 Customer Portal Ready');
+console.log('💎 Customer Portal Script Loaded');
+console.log('⏳ Waiting for Firebase to initialize...');
